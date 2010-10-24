@@ -1,64 +1,4 @@
-function initWebGL(canvasName, vshader, fshader, attribs, clearColor, clearDepth)
-{
-    var canvas = document.getElementById(canvasName);
-    var gl = canvas.getContext("experimental-webgl");
-    if (!gl) {
-        alert("No WebGL context found");
-        return null;
-    }
 
-    // Add a console
-    gl.console = ("console" in window) ? window.console : { log: function() { } };
-
-    // create our shaders
-    var vertexShader = loadShader(gl, vshader);
-    var fragmentShader = loadShader(gl, fshader);
-
-    if (!vertexShader || !fragmentShader)
-        return null;
-
-    // Create the program object
-    gl.program = gl.createProgram();
-
-    if (!gl.program)
-        return null;
-
-    // Attach our two shaders to the program
-    gl.attachShader (gl.program, vertexShader);
-    gl.attachShader (gl.program, fragmentShader);
-
-    // Bind attributes
-    for (var i in attribs)
-        gl.bindAttribLocation (gl.program, i, attribs[i]);
-
-    // Link the program
-    gl.linkProgram(gl.program);
-
-    // Check the link status
-    var linked = gl.getProgramParameter(gl.program, gl.LINK_STATUS);
-    if (!linked) {
-        // something went wrong with the link
-        var error = gl.getProgramInfoLog (gl.program);
-        gl.console.log("Error in program linking:"+error);
-
-        gl.deleteProgram(gl.program);
-        gl.deleteProgram(fragmentShader);
-        gl.deleteProgram(vertexShader);
-
-        return null;
-    }
-
-    gl.useProgram(gl.program);
-
-    gl.clearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
-    gl.clearDepth(clearDepth);
-
-    gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    
-    return gl;
-}
 
 //
 // loadShader
@@ -474,20 +414,16 @@ function loadImageTexture(gl, url)
 {
     var texture = gl.createTexture();
     texture.image = new Image();
-    texture.image.onload = function() { doLoadImageTexture(gl, texture.image, texture) }
+    texture.image.onload = function() { 
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        //gl.generateMipmap(gl.TEXTURE_2D)
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    };
     texture.image.src = url;
     return texture;
-}
-
-function doLoadImageTexture(gl, image, texture)
-{
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(
-        gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    //gl.generateMipmap(gl.TEXTURE_2D)
-    gl.bindTexture(gl.TEXTURE_2D, null);
 }
