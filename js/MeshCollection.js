@@ -1,0 +1,183 @@
+/*
+    MeshCollection.js
+    
+    MeshCollection class is responsable storing matrix information about
+    objects.
+    
+    The object needs to be initialized whenever any 3D object needs to be
+    created.
+*/
+MeshCollection = function()
+{
+    
+}
+
+/*
+    MeshCollection.prototype.box
+
+    Create a box with vertices, normals and texCoords. Create VBOs for each as well as the index array.
+    Return an object with the following properties:
+
+    normalObject        WebGLBuffer object for normals
+    texCoordObject      WebGLBuffer object for texCoords
+    vertexObject        WebGLBuffer object for vertices
+    indexObject         WebGLBuffer object for indices
+    numIndices          The number of indices in the indexObject
+*/
+MeshCollection.prototype.box = function() {
+    // box
+    //    v6----- v5
+    //   /|      /|
+    //  v1------v0|
+    //  | |     | |
+    //  | |v7---|-|v4
+    //  |/      |/
+    //  v2------v3
+    //
+    // vertex coords array
+    var vertices = new Float32Array(
+        [  1, 1, 1,  -1, 1, 1,  -1,-1, 1,   1,-1, 1,    // v0-v1-v2-v3 front
+           1, 1, 1,   1,-1, 1,   1,-1,-1,   1, 1,-1,    // v0-v3-v4-v5 right
+           1, 1, 1,   1, 1,-1,  -1, 1,-1,  -1, 1, 1,    // v0-v5-v6-v1 top
+          -1, 1, 1,  -1, 1,-1,  -1,-1,-1,  -1,-1, 1,    // v1-v6-v7-v2 left
+          -1,-1,-1,   1,-1,-1,   1,-1, 1,  -1,-1, 1,    // v7-v4-v3-v2 bottom
+           1,-1,-1,  -1,-1,-1,  -1, 1,-1,   1, 1,-1 ]   // v4-v7-v6-v5 back
+    );
+
+    // normal array
+    var normals = new Float32Array(
+        [  0, 0, 1,   0, 0, 1,   0, 0, 1,   0, 0, 1,     // v0-v1-v2-v3 front
+           1, 0, 0,   1, 0, 0,   1, 0, 0,   1, 0, 0,     // v0-v3-v4-v5 right
+           0, 1, 0,   0, 1, 0,   0, 1, 0,   0, 1, 0,     // v0-v5-v6-v1 top
+          -1, 0, 0,  -1, 0, 0,  -1, 0, 0,  -1, 0, 0,     // v1-v6-v7-v2 left
+           0,-1, 0,   0,-1, 0,   0,-1, 0,   0,-1, 0,     // v7-v4-v3-v2 bottom
+           0, 0,-1,   0, 0,-1,   0, 0,-1,   0, 0,-1 ]    // v4-v7-v6-v5 back
+       );
+
+
+    // texCoord array
+    var texCoords = new Float32Array(
+        [  1, 1,   0, 1,   0, 0,   1, 0,    // v0-v1-v2-v3 front
+           0, 1,   0, 0,   1, 0,   1, 1,    // v0-v3-v4-v5 right
+           1, 0,   1, 1,   0, 1,   0, 0,    // v0-v5-v6-v1 top
+           1, 1,   0, 1,   0, 0,   1, 0,    // v1-v6-v7-v2 left
+           0, 0,   1, 0,   1, 1,   0, 1,    // v7-v4-v3-v2 bottom
+           0, 0,   1, 0,   1, 1,   0, 1 ]   // v4-v7-v6-v5 back
+       );
+
+    // index array
+    var indices = new Uint8Array(
+        [  0, 1, 2,   0, 2, 3,    // front
+           4, 5, 6,   4, 6, 7,    // right
+           8, 9,10,   8,10,11,    // top
+          12,13,14,  12,14,15,    // left
+          16,17,18,  16,18,19,    // bottom
+          20,21,22,  20,22,23 ]   // back
+      );
+
+    var retval = { };
+
+    retval.normalObject = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, retval.normalObject);
+    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
+
+    retval.texCoordObject = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, retval.texCoordObject);
+    gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
+
+    retval.vertexObject = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, retval.vertexObject);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+    retval.indexObject = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, retval.indexObject);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+    retval.numIndices = indices.length;
+
+    return retval;
+}
+
+/*
+    MeshCollection.prototype.sphere
+
+    Create a sphere with the passed number of latitude and longitude bands and the passed radius.
+    Sphere has vertices, normals and texCoords. Create VBOs for each as well as the index array.
+    Return an object with the following properties:
+
+    normalObject        WebGLBuffer object for normals
+    texCoordObject      WebGLBuffer object for texCoords
+    vertexObject        WebGLBuffer object for vertices
+    indexObject         WebGLBuffer object for indices
+    numIndices          The number of indices in the indexObject
+*/
+MeshCollection.prototype.sphere = function(radius, lats, longs) {
+    var geometryData = [ ];
+    var normalData = [ ];
+    var texCoordData = [ ];
+    var indexData = [ ];
+
+    for (var latNumber = 0; latNumber <= lats; ++latNumber) {
+        for (var longNumber = 0; longNumber <= longs; ++longNumber) {
+            var theta = latNumber * Math.PI / lats;
+            var phi = longNumber * 2 * Math.PI / longs;
+            var sinTheta = Math.sin(theta);
+            var sinPhi = Math.sin(phi);
+            var cosTheta = Math.cos(theta);
+            var cosPhi = Math.cos(phi);
+
+            var x = cosPhi * sinTheta;
+            var y = cosTheta;
+            var z = sinPhi * sinTheta;
+            var u = 1-(longNumber/longs);
+            var v = latNumber/lats;
+
+            normalData.push(x);
+            normalData.push(y);
+            normalData.push(z);
+            texCoordData.push(u);
+            texCoordData.push(v);
+            geometryData.push(radius * x);
+            geometryData.push(radius * y);
+            geometryData.push(radius * z);
+        }
+    }
+
+    for (var latNumber = 0; latNumber < lats; ++latNumber) {
+        for (var longNumber = 0; longNumber < longs; ++longNumber) {
+            var first = (latNumber * (longs+1)) + longNumber;
+            var second = first + longs + 1;
+            indexData.push(first);
+            indexData.push(second);
+            indexData.push(first+1);
+
+            indexData.push(second);
+            indexData.push(second+1);
+            indexData.push(first+1);
+        }
+    }
+
+    var retval = { };
+
+    retval.normalObject = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, retval.normalObject);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normalData), gl.STATIC_DRAW);
+
+    retval.texCoordObject = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, retval.texCoordObject);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoordData), gl.STATIC_DRAW);
+
+    retval.vertexObject = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, retval.vertexObject);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(geometryData), gl.STATIC_DRAW);
+
+    retval.numIndices = indexData.length;
+    retval.indexObject = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, retval.indexObject);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexData), gl.STREAM_DRAW);
+
+    return retval;
+}

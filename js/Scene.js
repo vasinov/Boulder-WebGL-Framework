@@ -1,7 +1,3 @@
-width = -1;
-height = -1;
-var transl = -50, xOffs = yOffs = 0, drag = 0, xRot = yRot = 0;
-
 /*
     Scene.js
     
@@ -18,6 +14,11 @@ Scene = function(canvas_id, framerate_id, meshes_array_passed, textures, zoom)
     meshes_array = meshes_array_passed;
     this.textures = textures;
     this.zoom = zoom;
+    this.width = -1;
+    this.height = -1;
+    this.x_rot = 0;
+    this.y_rot = 0;
+    this.z_rot = 0;
     this.timer;
     this.meshes = [];
     this.create();
@@ -41,17 +42,22 @@ Scene.prototype.create = function() {
     
     var this_textures = this.textures;
     for(texture in this_textures) {
-        window[texture] = eval("loadImageTexture(gl, \""+this_textures[texture]+"\")");
+        window[texture] = eval("this.loadImageTexture(\""+this_textures[texture]+"\")");
     }
     
     gl.uniform3f(gl.getUniformLocation(gl.program, "lightDir"), 1, 0, 1);
     gl.uniform1i(gl.getUniformLocation(gl.program, "sampler2d"), 0);
     
-    gl.sphere = makeSphere(gl, 1, 30, 30);
-    gl.box = makeBox(gl);
-    
+    // initialize major objects for a collection of meshes,
+    // framerate calculator, and camera
+    meshCollection = new MeshCollection();
     framerate = new Framerate(this.framerate_id);
-    camera = new Camera(canvasObject);
+    camera = new Camera();
+    
+    // add standard meshes
+    gl.sphere = meshCollection.sphere(1, 30, 30);
+    gl.box = meshCollection.box();
+    
     this.timer = setInterval(this.drawPicture, 10);
 }
 
@@ -62,8 +68,8 @@ Scene.prototype.drawPicture = function() {
     // make sure the canvas is sized correctly.
     scene.reshape(45); // angle as a parameter
     
-    // rotate the scene based on xRot and yRot variables that change with user input
-    gl.perspectiveMatrix.rotate(0, yRot / 50, 0);
+    // rotate the scene based on x_rot and y_rot variables that change with user input
+    gl.perspectiveMatrix.rotate(0, scene.y_rot / 50, 0);
     
     // clear the canvas
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -82,23 +88,22 @@ Scene.prototype.drawPicture = function() {
 }
 
 Scene.prototype.reshape = function(angle) {
-    if (canvasObject.width == width && canvasObject.height == height)
+    if (canvasObject.width == scene.width && canvasObject.height == scene.height)
         return;
 
-    width = canvasObject.width;
-    height = canvasObject.height;
+    scene.width = canvasObject.width;
+    scene.height = canvasObject.height;
 
     // Set the viewport and projection matrix for the scene
-    gl.viewport(0, 0, width, height);
+    gl.viewport(0, 0, scene.width, scene.height);
     gl.perspectiveMatrix = new J3DIMatrix4();
-    gl.perspectiveMatrix.perspective(angle, width/height, 0.1, 10000);
+    gl.perspectiveMatrix.perspective(angle, scene.width/scene.height, 0.1, 10000);
     gl.perspectiveMatrix.lookat(0, 0, scene.zoom, 0, 0, 0, 0, 1, 0);
     gl.perspectiveMatrix.rotate(30, 1,0,0);
     gl.perspectiveMatrix.rotate(-30, 0,1,0);
 }
 
-Scene.prototype.initWebGL = function(canvasName, vshader, fshader, attribs, clearColor, clearDepth)
-{
+Scene.prototype.initWebGL = function(canvasName, vshader, fshader, attribs, clearColor, clearDepth) {
     var canvas = $('#'+canvasName).get(0);
     var gl = canvas.getContext("experimental-webgl");
     if (!gl) {
@@ -110,8 +115,8 @@ Scene.prototype.initWebGL = function(canvasName, vshader, fshader, attribs, clea
     gl.console = ("console" in window) ? window.console : { log: function() { } };
 
     // create our shaders
-    var vertexShader = loadShader(gl, vshader);
-    var fragmentShader = loadShader(gl, fshader);
+    var vertexShader = this.loadShader(gl, vshader);
+    var fragmentShader = this.loadShader(gl, fshader);
 
     if (!vertexShader || !fragmentShader)
         return null;
@@ -157,4 +162,65 @@ Scene.prototype.initWebGL = function(canvasName, vshader, fshader, attribs, clea
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     
     return gl;
+}
+
+Scene.prototype.loadShader = function(gl, shader_id)
+{
+    var shaderScript = document.getElementById(shader_id);
+    if (!shaderScript) {
+        gl.console.log("*** Error: shader script '"+shader_id+"' not found");
+        return null;
+    }
+
+    if (shaderScript.type == "x-shader/x-vertex")
+        var shaderType = gl.VERTEX_SHADER;
+    else if (shaderScript.type == "x-shader/x-fragment")
+        var shaderType = gl.FRAGMENT_SHADER;
+    else {
+        gl.console.log("*** Error: shader script '"+shader_id+"' of undefined type '"+shaderScript.type+"'");
+        return null;
+    }
+
+    // Create the shader object
+    var shader = gl.createShader(shaderType);
+    if (shader == null) {
+        gl.console.log("*** Error: unable to create shader '"+shader_id+"'");
+        return null;
+    }
+
+    // Load the shader source
+    gl.shaderSource(shader, shaderScript.text);
+
+    // Compile the shader
+    gl.compileShader(shader);
+
+    // Check the compile status
+    var compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+    if (!compiled) {
+        // Something went wrong during compilation; get the error
+        var error = gl.getShaderInfoLog(shader);
+        gl.console.log("*** Error compiling shader '"+shader_id+"':"+error);
+        gl.deleteShader(shader);
+        return null;
+    }
+
+    return shader;
+}
+
+Scene.prototype.loadImageTexture = function(url)
+{
+    var texture = gl.createTexture();
+    texture.image = new Image();
+    texture.image.onload = function() { 
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        //gl.generateMipmap(gl.TEXTURE_2D)
+        gl.bindTexture(gl.TEXTURE_2D, null);
+    };
+    texture.image.src = url;
+    return texture;
 }
