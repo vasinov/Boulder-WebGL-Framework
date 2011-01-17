@@ -13,7 +13,7 @@ MeshCollection = function()
 }
 
 MeshCollection.prototype.grid = function() {
-	// in main? - set up verts
+	// set up verts
 	this.vGrid(nRows);
 	
 	nVerts = nRows * nRows * 4;
