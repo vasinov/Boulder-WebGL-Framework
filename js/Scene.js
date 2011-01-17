@@ -6,6 +6,7 @@
     
     The object needs to be initialized once the document is loaded.
 */
+var meshes = [];
 Scene = function(canvas_id, framerate_id, meshes_array_passed, textures, zoom)
 {
     this.canvas_id = canvas_id;
@@ -20,6 +21,7 @@ Scene = function(canvas_id, framerate_id, meshes_array_passed, textures, zoom)
     this.y_rot = 0;
     this.z_rot = 0;
     this.timer;
+    this.scene;
     this.meshes = [];
     this.create();
 }
@@ -45,7 +47,7 @@ Scene.prototype.create = function() {
         window[texture] = eval("this.loadImageTexture(\""+this_textures[texture]+"\")");
     }
     
-    gl.uniform3f(gl.getUniformLocation(gl.program, "lightDir"), 1, 0, 1);
+    gl.uniform3f(gl.getUniformLocation(gl.program, "lightDir"), 1, 1, 1);
     gl.uniform1i(gl.getUniformLocation(gl.program, "sampler2d"), 0);
     
     // initialize major objects for a collection of meshes,
@@ -55,14 +57,23 @@ Scene.prototype.create = function() {
     camera = new Camera();
     
     // add standard meshes
+    gl.grid = meshCollection.grid(nRows);
     gl.sphere = meshCollection.sphere(1, 30, 30);
     gl.box = meshCollection.box();
+    
+    // go through all meshes and load them
+    var meshes_array_length = meshes_array.length;
+    for (var i = 0; i < meshes_array_length; i++) {
+        meshes[i] = eval('new Mesh('+meshes_array[i]+')');
+    }
     
     this.timer = setInterval(this.drawPicture, 10);
 }
 
 Scene.prototype.drawPicture = function() {
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    
+    scene.time = new Date().getTime();
+
     canvasObject.width = $(canvasObject).width();
     canvasObject.height = $(canvasObject).height();
     // make sure the canvas is sized correctly.
@@ -74,10 +85,9 @@ Scene.prototype.drawPicture = function() {
     // clear the canvas
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     
-    // go through all meshes and load them
-    var meshes_array_length = meshes_array.length;
-    for (var i = 0; i < meshes_array_length; i++) {
-        eval('new Mesh('+meshes_array[i]+')');
+    var meshes_length = meshes.length;
+    for(var i = 0; i < meshes_length; i++) {
+        meshes[i].redraw();
     }
 
     // finish up.

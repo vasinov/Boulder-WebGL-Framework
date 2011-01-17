@@ -60,6 +60,33 @@ Mesh.prototype.create = function() {
     this.draw();
 }
 
+Mesh.prototype.redraw = function() {
+    // model-view * projection matrix
+    this.mvpMatrix = new J3DIMatrix4(gl.perspectiveMatrix);
+
+    // set up all the vertex attributes for vertices, normals and texCoords
+    gl.bindBuffer(gl.ARRAY_BUFFER, eval("gl."+this.object+".vertexObject"));
+    gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, eval("gl."+this.object+".normalObject"));
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, eval("gl."+this.object+".texCoordObject"));
+    gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 0, 0);
+
+    // bind the index array
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, eval("gl."+this.object+".indexObject"));
+
+    this.normalMatrix.setUniform(gl, gl.getUniformLocation(gl.program, "u_normalMatrix"), false);
+    
+    this.mvpMatrix.multiply(this.mvMatrix);
+    this.mvpMatrix.setUniform(gl, gl.getUniformLocation(gl.program, "u_modelViewProjMatrix"), false);
+
+    // bind the texture
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    
+    // draw the object on the scene
+    this.draw();
+}
+
 Mesh.prototype.draw = function() {
     gl.drawElements(gl.TRIANGLES, eval("gl."+this.object+".numIndices"), eval("gl."+this.type), 0);
 }

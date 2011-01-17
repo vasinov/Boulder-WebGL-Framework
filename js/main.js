@@ -6,6 +6,8 @@ var light_increment = new Number(0.1); // light increment
 var my_textures = {}; // array of user textures
 var my_objects = []; // array of user 3D objects
 
+var nRows = 10;
+
 $(document).ready(function() {
     var moving_light = false;
 
@@ -54,7 +56,7 @@ $(document).ready(function() {
             //start moving light every 10 milliseconds
             light_timer = setInterval(function() {
                 // reset light
-                gl.uniform3f(gl.getUniformLocation(gl.program, "lightDir"), light_x, 0, light_z);
+                gl.uniform3f(gl.getUniformLocation(gl.program, "lightDir"), light_x, 1, light_z);
                 // if-else logic for light coordinates
                 if(light_x < 0 && (light_z >= -0.11 && light_z < 1.1)) {
                     light_x = light_x + light_increment;
@@ -113,16 +115,16 @@ $(document).ready(function() {
         e.preventDefault();
     });
     
-    // manually add objects to the objects array
+        // manually add objects to the objects array
     my_objects = [
+        "'grid', 45, 0, 2, 0, 1, buildingTexture,'UNSIGNED_SHORT'",
         "'box', 45, 0, 2, 0, 1, buildingTexture,'UNSIGNED_BYTE'",
-        "'sphere', 0, 0, 4, 0, 1, sphereTexture, 'UNSIGNED_SHORT'",
-        "'smallSphere', 0, 0, 5.5, 0, 1, sphereTexture, 'UNSIGNED_SHORT'"
+        "'sphere', 0, 0, 4, 0, 1, sphereTexture, 'UNSIGNED_SHORT'"
     ];
     
     // or add objects to the objects array in a for-loop;
     // any object can be accessed later
-    for(var i = -5; i <= 5; i++) {
+    for(var i = -2; i <= 2; i++) {
         my_objects.push("'box', 45, "+3*i+", 0, 0, 1, buildingTexture,'UNSIGNED_BYTE'");
         my_objects.push("'box', 45, 0, 0, "+3*i+", 1, buildingTexture,'UNSIGNED_BYTE'");
         my_objects.push("'sphere', 0, "+3*i+", 2, 0, 1, sphereTexture,'UNSIGNED_SHORT'");
@@ -137,8 +139,9 @@ $(document).ready(function() {
     
     // create a new scene with the canvas object id, framerate div id,
     // array of 3D objects, associative array of textures, and default zoom
-    scene = new Scene('canvas', 'framerate', my_objects, my_textures, 45);
+    scene = new Scene('canvas', 'framerate', my_objects, my_textures, 20);
     
     // add customized meshes
-    gl.smallSphere = meshCollection.sphere(0.5, 30, 30);
+    //gl.smallSphere = meshCollection.sphere(0.5, 30, 30);
+    gl.grid = meshCollection.grid(nRows);
 });

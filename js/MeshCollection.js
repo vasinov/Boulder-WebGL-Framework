@@ -9,7 +9,133 @@
 */
 MeshCollection = function()
 {
-    
+    this.grid_vertices;
+}
+
+MeshCollection.prototype.grid = function() {
+	// in main? - set up verts
+	this.vGrid(nRows);
+	
+	nVerts = nRows * nRows * 4;
+
+    // normal array
+	var vNormals = [];
+	var normDirec = 0;
+	for(var i = 0; i < nVerts*3; i +=3){
+		vNormals[i]   = 0;
+		vNormals[i+1] = 1;
+		vNormals[i+2] = 0;
+	}
+	var normals = new Float32Array(vNormals);
+
+    // texCoord array
+	var vTexCoords = [];
+	for(var i = 0; i < nVerts*2 ; i+=8 ){
+		vTexCoords[i]   = 1;
+		vTexCoords[i+1] = 0;
+		vTexCoords[i+2] = 1;
+		vTexCoords[i+3] = 1;
+		vTexCoords[i+4] = 0;
+		vTexCoords[i+5] = 1;
+		vTexCoords[i+6] = 0;
+		vTexCoords[i+7] = 0;
+	}
+	var texCoords = new Float32Array(vTexCoords);
+    /*var texCoords = new Float32Array(
+        [
+           1, 0,   1, 1,   0, 1,   0, 0,    // v0-v5-v6-v1 top
+        ]
+       );*/
+
+
+    // index array
+    // take the 4 verticies for a tile, and make 2 triangles
+	var gVISize = nRows * nRows * 6;
+	var vIndices = [];
+	var index = 0;
+	for( var i = 0; i < gVISize; i+=6){
+		vIndices[i] =   index;
+		vIndices[i+1] = index+1;
+		vIndices[i+2] = index+2;
+		vIndices[i+3] = index;
+		vIndices[i+4] = index+2;
+		vIndices[i+5] = index+3;
+		index += 4;
+	}
+	var indices = new Uint16Array(vIndices);    // FUCK UINT8!!!
+    /*var indices = new Uint8Array(
+        [  0, 1, 2,   0, 2, 3,
+          ]
+      );*/
+
+    var retval = { };
+
+    retval.vertexObject = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, retval.vertexObject);
+    gl.bufferData(gl.ARRAY_BUFFER, this.grid_vertices, gl.STATIC_DRAW);
+
+    retval.texCoordObject = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, retval.texCoordObject);
+    gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
+
+    retval.normalObject = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, retval.normalObject);
+    gl.bufferData(gl.ARRAY_BUFFER, normals, gl.STATIC_DRAW);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+    retval.indexObject = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, retval.indexObject);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+    retval.numIndices = indices.length;
+
+    return retval;
+}
+MeshCollection.prototype.vGrid = function(nrows) {
+	//time = scene.time / 1000;
+
+	verts = nRows * nRows * 4;
+	vgrid=[];
+	/*for(i = 0; i < verts; i++) {
+		vgrid[i] = new Array(3);
+    }*/
+	var rowIndex = 0;
+	var row = 0;
+	var zRowAdd = 0;
+	
+	for(x=0; x < nrows; x++) {
+		for(z=0; z < nrows; z++) {
+			
+			vertNum = (z*nrows + x) * 4 * 3;
+			
+			// draw the object centered
+			offsetx = -(nrows/2) + x;
+			offsetz = -(nrows/2) + z;
+			
+			// top-left
+			vgrid[vertNum+0+0] = offsetx;
+			vgrid[vertNum+0+1] = 0;
+			vgrid[vertNum+0+2] = offsetz;
+
+			// top-right
+			vgrid[vertNum+3+0] = offsetx+1;
+			vgrid[vertNum+3+1] = 0;
+			vgrid[vertNum+3+2] = offsetz;
+			
+			// bottom-right
+			vgrid[vertNum+6+0] = offsetx+1;
+			vgrid[vertNum+6+1] = 0;
+			vgrid[vertNum+6+2] = offsetz+1;
+
+			//bottom-left
+			vgrid[vertNum+9+0] = offsetx;
+			vgrid[vertNum+9+1] = 0;
+			vgrid[vertNum+9+2] = offsetz+1;
+		}
+	}
+	this.grid_vertices = new Float32Array(vgrid);
 }
 
 /*
