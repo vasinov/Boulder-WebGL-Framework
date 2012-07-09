@@ -1,4 +1,5 @@
-// varianles that are used right in the index.html file
+// variables that are used right in the index.html file
+
 var light_x = new Number(-1); // light x coordinate
 var light_z = new Number(0); // light y coordinate
 var light_increment = new Number(0.1); // light increment

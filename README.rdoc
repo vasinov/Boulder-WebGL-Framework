@@ -1,0 +1,12 @@
+== Welcome to the Boulder WebGL Framework
+
+This is an old project of mine in which I implemented a simple WebGL framework with a demo that includes lighting, two basic shapes (square and sphere), and scene controls that include zoom, moving light, and 3D projections.
+
+This frameworks needs a major refresh and may be one day I will get back to it.
+
+== TODO
+
+1. Better controls.
+2. More shaders.
+3. Code refactoring: no global namespace pollution, abstraction of the mesh model into a JSON model.
+4. Camera revamp.
